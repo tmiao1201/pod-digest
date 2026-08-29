@@ -1,22 +1,22 @@
 #!/usr/bin/env python3
-"""transcribe_groq.py — groq-direct 转写引擎：纯 stdlib 直连 Groq Whisper API，零非标依赖
+"""transcribe_groq.py — groq-direct 转写引擎：curl 直连 Groq Whisper API（multipart 原生支持）
 
 原理: ffmpeg 转码为 16kHz 单声道 mp3 并按 15 分钟切段（Groq 免费档单文件约 25MB 上限）
-      → 逐段 POST /openai/v1/audio/transcriptions (model=whisper-large-v3)
-      → 每段返回 verbose_json（带 segment 时间戳）→ 偏移量修正后拼接为 [MM:SS] 行
+      → 逐段 curl -F 上传 /openai/v1/audio/transcriptions (model=whisper-large-v3)
+      → 每段返回 verbose_json（带 segment 时间戳）→ 偏移量修正后拼接为 [HH:MM:SS] 行
+
+为什么用 curl 而不是 urllib：实测 python urllib 大 multipart 在部分网络下 Broken pipe
+（curl 同链路稳定）；curl 为 macOS/Linux 标配，公域用户零额外依赖。
 
 用法: transcribe_groq.py <audio_file> <out_txt> [--lang auto|zh|en|ja|...] [--model whisper-large-v3]
-环境: GROQ_API_KEY 必须已设置（免费注册 https://console.groq.com/keys）
+环境: GROQ_API_KEY 必须已设置（transcribe.sh 会自动从 agent-reach 的 config.yaml 借用）
 """
 import argparse
 import json
-import mimetypes
 import os
 import subprocess
 import sys
 import time
-import urllib.request
-import uuid
 
 API = os.environ.get("GROQ_API_BASE", "https://api.groq.com/openai/v1").rstrip("/") \
     + "/audio/transcriptions"
@@ -48,29 +48,30 @@ def make_chunks(path, workdir):
 
 
 def post_chunk(api_key, chunk, model, language):
-    """multipart/form-data 上传单段，返回 verbose_json dict"""
-    boundary = uuid.uuid4().hex
-    fields = {"model": model, "response_format": "verbose_json", "temperature": "0"}
+    """curl 上传单段，返回 verbose_json dict；非 2xx / 网络错误抛 RuntimeError（含状态码）"""
+    cmd = ["curl", "-s", "--max-time", "600", "--retry", "2",
+           "-H", f"Authorization: Bearer {api_key}",
+           "-F", f"model={model}",
+           "-F", "response_format=verbose_json",
+           "-F", "temperature=0"]
     if language and language != "auto":
-        fields["language"] = language
-
-    body = bytearray()
-    for k, v in fields.items():
-        body += (f"--{boundary}\r\nContent-Disposition: form-data; name=\"{k}\"\r\n\r\n{v}\r\n").encode()
-    mime = mimetypes.guess_type(chunk)[0] or "audio/mpeg"
-    fname = os.path.basename(chunk)
-    body += (f"--{boundary}\r\nContent-Disposition: form-data; name=\"file\"; "
-             f"filename=\"{fname}\"\r\nContent-Type: {mime}\r\n\r\n").encode()
-    with open(chunk, "rb") as f:
-        body += f.read()
-    body += f"\r\n--{boundary}--\r\n".encode()
-
-    req = urllib.request.Request(
-        API, data=bytes(body), method="POST",
-        headers={"Authorization": f"Bearer {api_key}",
-                 "Content-Type": f"multipart/form-data; boundary={boundary}"})
-    with urllib.request.urlopen(req, timeout=600) as r:
-        return json.loads(r.read())
+        cmd += ["-F", f"language={language}"]
+    cmd += ["-F", f"file=@{chunk}", "-w", "\n%{http_code}", API]
+    r = subprocess.run(cmd, capture_output=True, text=True)
+    if r.returncode != 0:
+        raise RuntimeError(f"网络异常 curl exit={r.returncode}: {r.stderr.strip()[-200:]}")
+    parts = r.stdout.rsplit("\n", 1)
+    status = int(parts[1]) if len(parts) == 2 and parts[1].strip().isdigit() else 0
+    body = parts[0]
+    if status >= 400:
+        raise RuntimeError(f"HTTP {status}: {body[:200]}")
+    try:
+        resp = json.loads(body)
+    except json.JSONDecodeError:
+        raise RuntimeError(f"非 JSON 响应: {body[:200]}")
+    if "error" in resp:
+        raise RuntimeError(f"API 错误: {str(resp['error'])[:200]}")
+    return resp
 
 
 def fmt_ts(sec):
@@ -106,13 +107,14 @@ def main():
             try:
                 resp = post_chunk(api_key, chunk, args.model, args.lang)
                 break
-            except urllib.error.HTTPError as e:
-                wait = 2**attempt * 5
+            except RuntimeError as e:
+                wait = 2**attempt * 8
                 if attempt == 2:
                     sh(["rm", "-rf", workdir])
-                    sys.exit(f"段 {i+1} 转写失败（{e.code} {e.reason}），已停。"
-                             f"429=免费额度耗尽，稍后再试或换 agent-reach 引擎")
-                print(f"段 {i+1} 失败({e.code})，{wait}s 后重试", file=sys.stderr)
+                    hint = "免费额度耗尽，稍后再试或换 agent-reach 引擎" if "429" in str(e) \
+                        else "可换 --engine agent-reach，或检查网络/代理"
+                    sys.exit(f"段 {i+1} 转写失败（{e}），已停。{hint}")
+                print(f"段 {i+1} 失败，{wait}s 后重试（{attempt+1}/3）：{str(e)[:80]}", file=sys.stderr)
                 time.sleep(wait)
         detected = resp.get("language", "?")
         for seg in resp.get("segments", []):
