@@ -59,13 +59,14 @@ python3 scripts/get_transcript.py "硅谷101" --match E250 \
 - 外文播客：digest 中文、金句双语、必出术语表
 - 跳过广告/口播/社群推广段（情报型 agent 的去噪职责）
 
-### Step 3：素材块 + 下游（半自动）
+### Step 3：素材块 + 下游（半自动，两个等价选项）
 
 digest 末尾固定产出三块（schema 见 `references/digest-format.md`）：
 ① 知识卡片分镜草案 ② 产业链四元组草案 ③ 金句精选。
 
-用户说「出卡片」→ 走 Ted-imgstyle（衔接见 `references/downstream.md`）；
-用户说「接产业链」→ 走 chain-rotation（四元组数值字段留空由数据层填，**绝不编数字**）。
+下游由用户一句话触发，两个选项平级：
+- 用户说「**出卡片**」→ 素材块① 喂 Ted-imgstyle 走生图流程（衔接见 `references/downstream.md`）
+- 用户说「**接产业链**」或「**出产业链分析**」→ 素材块② 喂 chain-rotation：四元组映射成 COMPANIES 清单，数值字段留空由数据层填，**绝不编数字**；若素材块②已判定「本期不适合」（A股映射弱/证据链薄），如实告知并给出可自研的延伸方向，不硬凑
 
 ### Step 4：信封落盘
 
