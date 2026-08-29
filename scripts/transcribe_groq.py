@@ -18,7 +18,8 @@ import time
 import urllib.request
 import uuid
 
-API = "https://api.groq.com/openai/v1/audio/transcriptions"
+API = os.environ.get("GROQ_API_BASE", "https://api.groq.com/openai/v1").rstrip("/") \
+    + "/audio/transcriptions"
 SEGMENT_SEC = 900  # 15 分钟一段，48kbps 单声道 ≈ 5MB，远低于免费档 25MB 限制
 
 
