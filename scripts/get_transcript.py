@@ -165,7 +165,12 @@ def main():
     transcript = os.path.join(out_dir, "transcript.txt")
 
     if os.path.exists(transcript):
-        print(f"✅ 已存在，跳过: {transcript}")
+        # 幂等复用也要复核：字符率勾稽（字符数/时长），越界打 WARNING 提示重转
+        dur = int(ep.get("duration_sec") or 0)
+        chars = len(re.sub(r"\s", "", open(transcript, encoding="utf-8").read()))
+        rate = chars / dur if dur else 0
+        flag = "⚠️ 覆盖率可疑，建议删稿重转" if (dur and not (3.0 <= rate <= 30)) else "✅"
+        print(f"{flag} 已存在，跳过: {transcript}（复用复核: chars={chars}, duration={dur}s, rate={rate:.1f}/s）")
         return
 
     meta = {**ep, "feed": feed, "fetched_at": datetime.now(timezone.utc).isoformat(),
@@ -192,8 +197,18 @@ def main():
         download_audio(ep["audio_url"], audio)
 
     print(f"🎙️  转写中（引擎 {args.engine}, 语言 {args.lang}）...", file=sys.stderr)
-    sh(["bash", os.path.join(DIR, "transcribe.sh"), audio, transcript,
-        "--engine", args.engine, "--lang", args.lang])
+    attempts = meta.setdefault("attempts", [])
+    try:
+        sh(["bash", os.path.join(DIR, "transcribe.sh"), audio, transcript,
+            "--engine", args.engine, "--lang", args.lang])
+        attempts.append({"goal": "transcribe", "engine": args.engine, "result": "ok"})
+    except Exception as e:
+        attempts.append({"goal": "transcribe", "engine": args.engine,
+                         "result": "fail", "error": str(e)[-300:]})
+        meta["attempts"] = attempts
+        with open(os.path.join(out_dir, "meta.json"), "w", encoding="utf-8") as f:
+            json.dump(meta, f, ensure_ascii=False, indent=1)
+        raise
     if not args.keep_audio:
         os.remove(audio)
     print(f"✅ 逐字稿 → {transcript}")

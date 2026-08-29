@@ -59,7 +59,7 @@ scripts/get_transcript.py "硅谷101" --match E250 --youtube "https://www.youtub
 | 2 | 不要从小宇宙 URL 构造 podcast id 去猜页面 | 播客名 → iTunes Search API 是唯一可信入口 |
 | 3 | RSS 音频 URL 有 302 重定向 | curl/python 跟随重定向（`-L`） |
 | 4 | Spotify 独家节目无 RSS | 无解，明确告知用户跳过 |
-| 5 | 同一步骤失败 3 次 | **立即停**，列出已试方案标记「需人工介入」，不要换姿势瞎重试 |
+| 5 | 同一目标失败 3 次（换命令/参数/工具都算同一目标，不重置计数） | **立即停**，列出已试方案+各自实际报错，标记「需人工介入」；无报错证据的「失败」不计入、也不得作为换第 4 种姿势的理由 |
 | 6 | YouTube 无 cookie 被反爬拦截 | 升级 yt-dlp + cookies-from-browser；仍失败→放弃字幕路径走转写 |
 | 7 | RSS 里 itunes:duration 格式不一（秒/HH:MM:SS） | parse_feed.py 已统一换算成秒 |
 | 8 | 英文播客转写不写死 zh | 默认 auto 检测；shows.yaml 按节目配 lang |
