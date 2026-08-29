@@ -96,7 +96,7 @@ def yt_cookie_args():
     return []
 
 
-def youtube_subs(url, out_dir, yt_cookies=None):
+def youtube_subs(url, out_dir, prefer_lang="auto"):
     """抓 YouTube 字幕作为逐字稿（自动字幕通常无标点，digest 引擎可处理）"""
     sub_prefix = os.path.join(out_dir, "sub")
     sh(["yt-dlp", "--skip-download", "--write-sub", "--write-auto-sub",
@@ -106,16 +106,19 @@ def youtube_subs(url, out_dir, yt_cookies=None):
     if not found:
         raise RuntimeError("YouTube 无字幕文件（或被反爬拦截）→ 改走音频转写路径")
 
-    # 字幕轨择优: 原创中文 > 原创外文 > 机器翻译轨（形如 en-zh-Hans = 从zh-Hans机翻成英文）
-    ZH = {"zh-Hans", "zh-CN", "zh", "zh-Hant", "zh-TW", "zh-HK"}
+    # 字幕轨择优: 原语言优先！机翻轨(目标语-源语, 如 en-zh-Hans)双重降质只能垫底
+    # YouTube 命名: 原创轨=裸码(zh-Hans/en)或 <code>-orig；翻译轨=<目标>-<源>-... (≥3段)
+    def is_translation(lang):
+        tok = lang.split("-")
+        return len(tok) >= 3 and len(tok[1]) <= 4 and tok[1] != "orig" and not tok[1].isdigit()
 
     def track_rank(f):
         lang = f[len("sub."):-len(".vtt")]
-        if lang in ZH:
-            return 0
-        if re.match(r"^[a-z]{2}-", lang):
-            return 2  # 机翻轨（目标语-源语）
-        return 1      # 原创外文
+        if is_translation(lang):
+            return 2                                  # 机翻轨垫底
+        if prefer_lang != "auto" and lang.split("-")[0] == prefer_lang:
+            return 0                                  # 命中节目原语言
+        return 1                                      # 其他原创轨
     vtt = os.path.join(out_dir, sorted(found, key=lambda f: (track_rank(f), f))[0])
     # vtt → [HH:MM:SS] 行（去重复行/头）
     lines, seen = [], set()
@@ -172,7 +175,7 @@ def main():
     print(f"📁 {out_dir}", file=sys.stderr)
 
     if args.youtube:
-        n = youtube_subs(args.youtube, out_dir)
+        n = youtube_subs(args.youtube, out_dir, prefer_lang=args.lang)
         print(f"✅ YouTube 字幕逐字稿（{n} 行）→ {transcript}")
         return
 
