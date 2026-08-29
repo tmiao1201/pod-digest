@@ -84,16 +84,39 @@ def download_audio(url, dest):
     return dest
 
 
-def youtube_subs(url, out_dir):
+def yt_cookie_args():
+    """YouTube 反爬需要登录态 cookie。
+    默认: 装了 Chrome 就用 chrome 的（用户多半登录着 YouTube）
+    覆盖: PODDIGEST_YT_COOKIES=firefox/safari/none 或 --yt-cookies 参数"""
+    override = os.environ.get("PODDIGEST_YT_COOKIES", "")
+    if override:
+        return [] if override == "none" else ["--cookies-from-browser", override]
+    if os.path.exists("/Applications/Google Chrome.app"):
+        return ["--cookies-from-browser", "chrome"]
+    return []
+
+
+def youtube_subs(url, out_dir, yt_cookies=None):
     """抓 YouTube 字幕作为逐字稿（自动字幕通常无标点，digest 引擎可处理）"""
     sub_prefix = os.path.join(out_dir, "sub")
     sh(["yt-dlp", "--skip-download", "--write-sub", "--write-auto-sub",
         "--sub-langs", "zh-Hans,zh,en.*,ja.*,default", "--convert-subs", "vtt",
-        "-o", sub_prefix, url])
+        *yt_cookie_args(), "-o", sub_prefix, url])
     found = [f for f in os.listdir(out_dir) if f.startswith("sub") and f.endswith(".vtt")]
     if not found:
         raise RuntimeError("YouTube 无字幕文件（或被反爬拦截）→ 改走音频转写路径")
-    vtt = os.path.join(out_dir, sorted(found)[0])
+
+    # 字幕轨择优: 原创中文 > 原创外文 > 机器翻译轨（形如 en-zh-Hans = 从zh-Hans机翻成英文）
+    ZH = {"zh-Hans", "zh-CN", "zh", "zh-Hant", "zh-TW", "zh-HK"}
+
+    def track_rank(f):
+        lang = f[len("sub."):-len(".vtt")]
+        if lang in ZH:
+            return 0
+        if re.match(r"^[a-z]{2}-", lang):
+            return 2  # 机翻轨（目标语-源语）
+        return 1      # 原创外文
+    vtt = os.path.join(out_dir, sorted(found, key=lambda f: (track_rank(f), f))[0])
     # vtt → [HH:MM:SS] 行（去重复行/头）
     lines, seen = [], set()
     for ln in open(vtt, encoding="utf-8", errors="ignore"):
