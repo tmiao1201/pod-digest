@@ -1,6 +1,7 @@
 # 下游衔接（downstream）—— 素材块怎么喂给下游 skill
 
 > 半自动原则：digest 产出结构化素材块，**用户点头才触发下游**。
+> **消费门槛**：下游消费的前提 = 信封由 `verify_digest.py --write-envelope` 回写且 status=green——跳过机检=断下游，逃逸无收益。
 > 原因：Ted-imgstyle 有两道强制人工确认门（分镜过目、风格选定）；chain-rotation 单次跑 15-30 分钟，
 > 只有本期产业情报足够密（四元组 ≥ 5 行）才值得跑。
 
