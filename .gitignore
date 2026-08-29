@@ -1,0 +1,6 @@
+out/
+*.mp3
+*.m4a
+*.vtt
+.DS_Store
+__pycache__/
