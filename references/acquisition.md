@@ -65,6 +65,7 @@ scripts/get_transcript.py "硅谷101" --match E250 --youtube "https://www.youtub
 | 8 | 英文播客转写不写死 zh | 默认 auto 检测；shows.yaml 按节目配 lang |
 | 9 | 部分网络下 curl/urllib 直连 api.groq.com 被 TLS 指纹拦截（HTTP 403，换 UA/去 Expect 头均无效），python requests 栈却放行 | 实测于 2026-08 本机：groq-direct（curl 实现）在该网络不可用，本地默认走 agent-reach（requests 栈）；海外/普通网络 curl 路径正常——公域保留 groq-direct 作零依赖路径 |
 | 10 | agent-reach 转写输出为 response_format=text：无时间戳、无标点 | digest 时间戳改用 shownotes 官方章节目录锚定；金句做标点重建并逐条子串回对；ASR 专名误转建对照表（见 E250 digest 附录样板） |
+| 11 | whisper 处理中文音频的**幻觉片头/片尾**：无故冒出「请不吝点赞 订阅 转发 打赏支持明镜与点点栏目」等常见 YouTube 口播语（训练数据污染），忽左忽右实测首行即中招 | 检查 transcript 首尾行，此类幻觉行直接忽略，不要当作正文引用进 digest |
 
 ## 语言策略
 
