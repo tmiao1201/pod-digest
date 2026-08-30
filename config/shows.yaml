@@ -1,23 +1,14 @@
-# 订阅清单（watchlist）—— 你关注的播客往这里加
-# 字段说明:
-#   name:        显示名（也是 out/episodes/ 的目录名）
-#   itunes_name: iTunes 搜索用名（英文播客填英文，默认同 name）
-#   youtube:     可选，频道搜索名（有视频版则字幕优先，免转写）
-#   rss:         可选，已知 feedUrl 直接填（省一次搜索）
-#   lang:        可选，转写语言提示 zh/en/ja（默认 auto 自动检测）
-#   tags:        自由标签（未来按主题筛 digest 用）
-# 用法: `pod-digest --scan` 扫描此清单列出各节目最新一集；逐集 digest 时按 name 索引
-
+# 订阅清单示例（公开仓库自带这份；你的私单写到 shows.local.yaml，不入库）
+# 字段: name 必填 / lang 可选(zh|en|ja,默认auto,英文播客建议填) / youtube 可选(频道搜索词,填了优先字幕路径)
+#       itunes_name 可选(搜索名,默认同name) / rss 可选(已知feed直链) / tags 自定义
 shows:
   - name: 硅谷101
     youtube: "硅谷101播客"
     lang: zh
-    tags: [科技, AI, 生物医药, 投资]
-
-  # ---- 下面是待验证的第二/第三测试节目（M3 泛化用）----
+    tags: [科技, AI, 生物医药]
+  - name: Acquired
+    lang: en
+    tags: [科技, 商业史]
   - name: 忽左忽右
     lang: zh
     tags: [人文, 访谈]
-  - name: Acquired
-    lang: en
-    tags: [科技, 商业史, 投资]

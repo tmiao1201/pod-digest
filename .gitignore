@@ -4,3 +4,4 @@ out/
 *.vtt
 .DS_Store
 __pycache__/
+config/shows.local.yaml

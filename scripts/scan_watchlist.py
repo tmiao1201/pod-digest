@@ -31,9 +31,15 @@ def parse_shows(path):
 
 
 def main():
-    if not os.path.exists(SHOWS):
-        sys.exit(f"找不到 {SHOWS}")
-    shows = parse_shows(SHOWS)
+    shows = []
+    for path in (SHOWS, os.path.join(os.path.dirname(SHOWS), "shows.local.yaml")):
+        if os.path.exists(path):
+            shows += parse_shows(path)   # 示例清单 + 个人私单(shows.local.yaml, 不入库)
+    seen, uniq = set(), []
+    for s_ in shows:                     # 按 name 去重（local 覆盖示例同名条目）
+        if s_["name"] not in seen:
+            seen.add(s_["name"]); uniq.append(s_)
+    shows = uniq
     if len(sys.argv) > 1:
         shows = [s for s in shows if sys.argv[1] in s["name"]]
 

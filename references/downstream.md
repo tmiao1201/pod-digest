@@ -1,51 +1,46 @@
-# 下游衔接（downstream）—— 素材块怎么喂给下游 skill
+# 下游衔接（downstream）—— 可选放大器，不是必需品
 
-> 半自动原则：digest 产出结构化素材块，**用户点头才触发下游**。
-> **消费门槛**：下游消费的前提 = 信封由 `verify_digest.py --write-envelope` 回写且 status=green——跳过机检=断下游，逃逸无收益。
-> 原因：Ted-imgstyle 有两道强制人工确认门（分镜过目、风格选定）；chain-rotation 单次跑 15-30 分钟，
-> 只有本期产业情报足够密（四元组 ≥ 5 行）才值得跑。
+> **核心原则：digest + 三素材块本身就是终点交付物。**
+> 卡片提示词是喂任意生图模型（nanobanana / gpt-image / 即梦 / 豆包…）的自然语言；
+> 四元组表是自解释的投研底稿。下游 skill 只是放大器——有则全功能，无则内置 fallback。
 
-## ① → Ted-imgstyle（知识卡片）
+## Step 3 出口：下游自动探测
 
-接法照抄 `trip-cards` skill 的模式（上游预拆分镜 → 调用 Ted-imgstyle 出提示词）：
+```bash
+# 会话内执行一次，按结果走分支
+ls ~/.claude/skills/Ted-imgstyle/SKILL.md 2>/dev/null && echo "imgstyle=有" || echo "imgstyle=无"
+ls ~/.claude/skills/chain-rotation/SKILL.md 2>/dev/null && echo "chain=有" || echo "chain=无"
+```
 
-1. 从素材块①拿现成的分镜表（镜号/画面内容/文字要点三字段已备好）
-2. 调用 Ted-imgstyle skill 走生图流程，告知：
-   - 比例 3:4、张数 = 分镜数
-   - 风格：用素材块①里的建议代号（用户可换）
-   - 文字要点逐字使用（Ted-imgstyle 的 Text manifest 要求逐字）
-3. 产物落 `~/cc/Ted-imgstyle/outputs/` 或桌面 `*_生图提示词.md`
-4. 后续生图（nanobanana / gpt-image-2）由用户在 Ted-imgstyle 流程里完成
+### ① → 知识卡片（素材块①）
 
-## ② → chain-rotation（产业链兑现轮动）
+- **本地有 Ted-imgstyle**：走其生图流程（分镜过目→选风格→产提示词，上游预拆分镜照 trip-cards 模式），产物落其 outputs/
+- **没有（公域默认）**：用 `references/card-styles.md` 的三预设（G1 手账/G2 扁平信息图/G3 黑白编辑）直接组装成套提示词——分镜表素材块①已备好，输出一个 md，用户逐张粘贴给任意生图模型
+- 两种路径产出物等价：**模型无关的自然语言提示词 + 逐字 Text manifest**
 
-1. 从素材块②读出：产品锚点 + 四元组清单 + 证据强度
-2. 调用 chain-rotation skill，把四元组映射成它的 `COMPANIES` 清单格式
-   （`环节, 名称, 代码, 兑现节奏标签` 四列；代码列留空让它落）
-3. **红线**：播客口述观点属于定性证据——chain-rotation 的数值字段
-   （估值/涨跌/PE 分位等）一律由数据层算，digest 不提供也不暗示数字
-4. 口述节奏标签在它的体系里只能给「弱/中证据强度」，提示语里注明来源是播客访谈
+### ② → 产业链分析（素材块②）
 
-### 数据源选项（data_source）
+- **本地有 chain-rotation**（含 tsdata 数据层）：四元组映射成其 COMPANIES 清单跑兑现轮动仪表盘；红线不变——数值字段留空由数据层填，绝不编数字，播客口述只做定性背景
+- **没有（公域默认）**：四元组表本身就是交付物。想补数据，三行代码自助：
 
-四元组的代码/财务数据填充，按用户环境选：
+```python
+# 方案A：tushare（需自己 token，pro_api_data.daily_basic 拿 PE/市值）
+import tushare as ts; pro = ts.pro_api("你的token")
+pro.daily_basic(ts_code="688137.SH", fields="close,pe,total_mv").tail(1)
+# 方案B：akshare（免费无 token）
+import akshare as ak
+ak.stock_zh_a_spot_em()[ak.stock_zh_a_spot_em()["代码"].str.contains("688137")]
+```
+- **数据源选项**：`local-tsdata`（本地私设）/ `tushare` / `akshare`（公域默认推荐，免费）/ `manual` / `qualitative`（纯定性，零依赖默认）
 
-| 选项 | 依赖 | 适用 |
-|---|---|---|
-| `local-tsdata` | 本地 tsdata 数据层（见 local-setup.md） | 本机默认 |
-| `tushare` | 用户自己的 tushare token | 公域用户（有 token） |
-| `akshare` | `pip install akshare`，免费无 token | 公域默认推荐 |
-| `manual` | 用户自备数据文件 | 特殊情况 |
-| `qualitative` | 不拉数，纯定性四元组 | 发布版默认/快速浏览 |
+### ③ → 金句精选（素材块③）
 
-发布版默认 `qualitative`（零依赖跑通），本地默认 `local-tsdata`。
+无下游依赖：可直接复制用于分享/卡片文字层。
 
-## ③ → 金句精选
+### ④ → Obsidian / 笔记软件（可选）
 
-无固定下游：直接复制可用于朋友圈/知识星球/卡片文字层。若用户要求，
-也可作为素材块①中某张卡片的文字要点。
+用户说「存进笔记」时按其本地配置复制 digest.md，无固定路径。
 
-## ④ → 第二大脑 / Obsidian（可选）
+## 消费门槛
 
-用户说「存进大脑」时：把 digest.md 复制进 Obsidian vault 的捕获目录
-（路径见 `references/local-setup.md`，属于本地私设）。
+下游消费的前提 = 信封由 `verify_digest.py --write-envelope` 回写且 status=green——跳过机检=断下游。
