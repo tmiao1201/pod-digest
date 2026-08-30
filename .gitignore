@@ -5,3 +5,4 @@ out/
 .DS_Store
 __pycache__/
 config/shows.local.yaml
+references/local-setup.local.md

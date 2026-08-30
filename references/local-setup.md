@@ -1,34 +1,19 @@
-# 本地私设（Ted 的环境）—— 发布公域时本文件整体替换为通用安装指引
+# 本地私设模板（你的机器环境记这里；真实私设写在本文件同目录 local-setup.local.md——已 gitignore，不入库）
 
-> 公域原则：主流程（SKILL.md / scripts / 其他 references）不出现任何本机路径和私有依赖，
-> 全部收拢在这里。
-
-## 环境
-
-- 机器：MacBook M3 / 16GB，macOS
-- 开发仓：`~/cc/pod-digest`，symlink：`~/.claude/skills/pod-digest -> ~/cc/pod-digest`
-- yt-dlp / ffmpeg：brew 安装（`/opt/homebrew/bin/`）
-- YouTube 字幕路径需要：新版 yt-dlp（YouTube 反爬更新频繁，跑不动就 `brew upgrade yt-dlp`）
-  + Chrome 登录态 cookie（`--cookies-from-browser chrome`）
+> 公域用户：把你的私人环境按下面骨架填到 local-setup.local.md，主流程永远不读私货。
 
 ## 转写引擎
+- agent-reach CLI 是否安装：`command -v agent-reach`（key 用 `agent-reach configure groq-key <key>` 托管）
+- 未装则 `export GROQ_API_KEY=...`（groq-direct 引擎）
+- 你的网络若拦 curl 直连 api.groq.com（403/断连）：改用 agent-reach 引擎或配 `GROQ_API_BASE` 代理
 
-- agent-reach CLI：`~/.local/bin/agent-reach`
-- groq key 托管：`agent-reach configure groq-key <key>`（key 不进任何 .env/zshrc）
-- 状态检查：`agent-reach doctor --json` 看 youtube / xiaoyuzhou 后端
-- 未装 agent-reach 的回退：`export GROQ_API_KEY=...`（groq-direct 引擎）
+## YouTube 字幕
+- yt-dlp 版本与升级方式（brew / pipx / 官方二进制）
+- 浏览器 cookie 来源（chrome/firefox/safari，`PODDIGEST_YT_COOKIES` 可覆盖）
 
-## chain-rotation 数据层（素材块② data_source=local-tsdata 时）
+## 产业链数据层（可选，接自己的数据源时填）
+- 数据接口：tushare token / akshare / 自建缓存——示例代码见 downstream.md
+- 若本地有 chain-rotation 类 skill：其数据层调用方式
 
-- `PYTHONPATH=/Users/tedmiao/cursor /usr/local/bin/python3`
-- `tsdata.get_panel` / `tsdata.get_fina` / `report_rc`（详见 chain-rotation skill 的 references/data_layer.md）
-- 数据新鲜度落后 > 2 交易日先 `tsdata.update`
-
-## Obsidian 第二大脑
-
-- vault 在 iCloud；digest 存入brain 的捕获目录由用户当次指定（无固定路径）
-
-## 工作台信封
-
-- 外壳：`~/cursor/workbench/build.py`（REGISTRY 注册表）
-- 本 skill 信封：`out/envelopes/pod-digest.json`（未来在 REGISTRY 加一行即可入动物园外壳）
+## 笔记/推送目的地（可选）
+- Obsidian vault 或其他笔记库路径（digest「存进笔记」时用）

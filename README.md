@@ -53,6 +53,12 @@ python3 scripts/scan_watchlist.py                               # 扫描订阅�
 | digest 生成 | Claude Code 会话 | 本 skill 的主体就是给会话 LLM 的作业指导 |
 | 卡片/产业链下游 | 可选 | 内置 G1手账/G2扁平/G3黑白 三风格预设 + 数据自助指引，无下游也能用 |
 
+## 示例（examples/）
+
+- `digest-example-E250.md` — 真实 digest 节选版：证据三级标签/利益相关标注/三素材块完整结构（来源：硅谷101 E250，Moderna 肿瘤疫苗三期）
+- `dashboard-mRNA-chain.png` — 下游产物：产业链兑现轮动仪表盘截图（四元组→chain-rotation，真实财务数据）
+- `cards-prompts-example.md` — 下游产物：知识卡片成套生图提示词（素材块①→提示词，喂任意生图模型）
+
 ## 目录
 
 `SKILL.md` 主流程 ｜ `references/` 获取路由/digest模板/下游衔接/卡片风格/本地私设 ｜ `scripts/` 获取转写+机检 ｜ `config/shows.yaml` 订阅清单示例（私单写 `shows.local.yaml`，不入库）
