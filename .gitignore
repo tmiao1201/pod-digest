@@ -6,3 +6,4 @@ out/
 __pycache__/
 config/shows.local.yaml
 references/local-setup.local.md
+config/mcporter.json
