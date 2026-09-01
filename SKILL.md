@@ -77,7 +77,7 @@ digest 末尾固定产出三块（schema 见 `references/digest-format.md`）：
 
 下游由用户一句话触发，三个选项平级：
 - 用户说「**出报告**」→ `python3 scripts/make_report.py <本期目录>`：digest.md → 自包含 HTML 研究简报（企业蓝、离线可开、可打印 PDF、零依赖）——内置下游，产物 report.html 在同目录
-- 用户说「**出卡片**」→ 素材块① 出成套生图提示词：本地有 Ted-imgstyle 走其风格库；没有则用 `references/card-styles.md` 三预设（G1手账/G2扁平/G3黑白）组装，产物=模型无关提示词，粘贴给任意生图模型即可
+- 用户说「**出卡片**」→ 素材块① 出**双产物**：①`make_cards.py <目录> --style G1|G2|G3` 秒出 **HTML 卡片册**（图文结合即看即转，cards.html，打印适配）②成套生图提示词（本地有 Ted-imgstyle 走其风格库，否则用 `references/card-styles.md` 三预设组装，喂任意生图模型）
 - 用户说「**接产业链**」或「**出产业链分析**」→ 素材块② ：本地有 chain-rotation 则映射成 COMPANIES 清单跑兑现轮动（数值字段留空由数据层填，**绝不编数字**）；没有则四元组表即交付，附 tushare/akshare 数据自助指引。若素材块②已判定「本期不适合」（映射弱/证据链薄），如实告知并给自研延伸方向，不硬凑
 
 ### Step 4：信封落盘
@@ -114,7 +114,8 @@ digest 完成前逐项过，全绿才算完成：
 | 路径 | 说明 |
 |---|---|
 | `scripts/get_transcript.py` | 主入口：选集+下载+转写一条龙（幂等） |
-| `scripts/make_report.py` | 内置下游③「出报告」：digest.md → 自包含 HTML 简报（零依赖） |
+| `scripts/make_report.py` | 内置下游「出报告」：digest.md → 自包含 HTML 简报（零依赖） |
+| `scripts/make_cards.py` | 「出卡片」产物①：素材块① → HTML 知识卡片册（G1/G2/G3 风格，零依赖） |
 | `scripts/itunes_search.sh` / `parse_feed.py` / `transcribe.sh` / `transcribe_groq.py` | 分步工具（acquisition.md 有详解） |
 | `references/acquisition.md` | 获取路由 + 8 条实测坑 + Hard Stop 纪律 |
 | `references/digest-format.md` | digest 模板逐节规范 + 证据强度标签 + 素材块 schema |
