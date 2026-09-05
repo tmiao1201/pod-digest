@@ -1,9 +1,13 @@
 out/
 *.mp3
 *.m4a
+*.mp4
+*.wav
+*.aiff
 *.vtt
 .DS_Store
 __pycache__/
+.codegraph/
 config/shows.local.yaml
 references/local-setup.local.md
 config/mcporter.json

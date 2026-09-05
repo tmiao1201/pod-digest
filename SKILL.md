@@ -2,9 +2,9 @@
 name: pod-digest
 description: |
   科技播客炼金炉：任意播客 → 带时间戳逐字稿 → 结构化 digest（产业情报/科技原理/金句/术语表）
-  → 三个自包含素材块（知识卡片分镜/产业链四元组/金句精选）。下游为可选放大器：本地装了 Ted-imgstyle/chain-rotation 自动接入，没装则用内置卡片风格预设与数据自助指引，开箱即用。
+  → 中文摘要与可回溯素材；可按需交付研究简报、知识图卡、产业链分析或带中文配音和字幕的图卡视频。
   触发词：「digest 这期播客」「炼一下硅谷101最新一期」「播客digest」「pod-digest」
-  「提取播客逐字稿」「播客转写总结」「这期播客讲了什么值得听的」。
+  「提取播客逐字稿」「播客转写总结」「播客出图卡」「播客配音视频」「这期播客讲了什么值得听的」。
   适用：任意 RSS 分发的播客（中英文皆可）；有对应播客单集的 YouTube 视频（--youtube 链接须来自播客频道的一集，标题/日期与 RSS 单集互证）。
   不适用：Spotify 独家且无 YouTube 版（两个源都没有才跳过）；微信读书/文章（留给 v2）；无播客单集对应的独立 YouTube 视频（vLog/发布会，留给 v2）；只要下载音频不需要 digest。
 ---
@@ -13,6 +13,20 @@ description: |
 
 > 一手产业信息往往先出现在播客访谈里（企业高管/创始人亲自发声），而不是研报里。
 > 本 skill 把「听播客」变成可积累的情报资产：逐字稿 → digest → 素材块 → 下游框架。
+
+## 输出选项
+
+按用户选择完成对应产物；只要摘要时不自动生成图片或视频。用户已要求图卡或配音视频时，继续到实际成品，不以分镜或提示词代替。
+
+| 用户请求 | 交付物 | 执行参考 |
+|---|---|---|
+| digest／总结 | 中文摘要、三素材块与来源 | 下文主流程 |
+| 出报告 | 自包含 HTML 研究简报 | `scripts/make_report.py` |
+| 出图卡 | 有出处的实际图片、文案与提示词 | [codex-media.md](references/codex-media.md)；Codex 中使用当前内置生图 |
+| 出配音视频／图卡加配音 | 中文合成旁白、同步字幕、图卡动效 MP4，另附 SRT 与音轨 | [narrated-video.md](references/narrated-video.md)；`scripts/make_video.py` |
+| 接产业链 | 有证据的四元组／数据支持的分析 | [downstream.md](references/downstream.md) |
+
+命令在项目根目录执行；通过软链接安装时以脚本的真实目录定位项目。已有本期逐字稿、摘要或图卡可复用，仍需核对相关原稿和来源。新媒体写入新的运行目录，保留历史交付。
 
 ## 核心纪律（先读这个）
 
@@ -69,20 +83,23 @@ python3 scripts/get_transcript.py "硅谷101" --match E250 \
 - 外文播客：digest 中文、金句双语、必出术语表
 - 跳过广告/口播/社群推广段（情报型 agent 的去噪职责）
 
-### Step 3：素材块 + 下游（半自动，两个等价选项；下游为可选放大器）
+### Step 3：素材块 + 下游（按用户选择执行）
 
 digest 末尾固定产出三块（schema 见 `references/digest-format.md`）：
 ① 知识卡片分镜草案 ② 产业链四元组草案 ③ 金句精选。
-**素材块本身就是终点交付物**——下游 skill 有则放大、无则内置 fallback（探测逻辑与降级路径见 `references/downstream.md`）。
+只请求 digest 时，素材块就是交付物；选择图卡、报告、产业链或配音视频时继续完成对应成品。工具选择见 `references/downstream.md`。
 
-下游由用户一句话触发，三个选项平级：
+下游由用户一句话触发：
 - 用户说「**出报告**」→ `python3 scripts/make_report.py <本期目录>`：digest.md → 自包含 HTML 研究简报（企业蓝、离线可开、可打印 PDF、零依赖）——内置下游，产物 report.html 在同目录
-- 用户说「**出卡片**」→ 素材块① 出**双产物**：①`make_cards.py <目录> --style G1|G2|G3` 秒出 **HTML 卡片册**（图文结合即看即转，cards.html，打印适配）②成套生图提示词（本地有 Ted-imgstyle 走其风格库，否则用 `references/card-styles.md` 三预设组装，喂任意生图模型）
+- 用户说「**出图卡／出卡片**」→ 素材块①核对原稿后按 `references/codex-media.md` 生图、看图验收；保留逐字文案与提示词。有当前可调用的生图工具时直接交付图片。只要求提示词时交付提示词；需要 HTML 阅读／打印版时用 `make_cards.py <目录> --style G1|G2|G3`。
+- 用户说「**出配音视频／图卡加配音／带字幕短视频**」→ 按 `references/narrated-video.md` 将已核验内容改写成短旁白，准备图卡与 `narration.json`，运行 `make_video.py` 生成实际 MP4、字幕、音轨和验证记录。时长随正常语速的旁白决定，不硬压进原来的静音视频长度。
 - 用户说「**接产业链**」或「**出产业链分析**」→ 素材块② ：本地有 chain-rotation 则映射成 COMPANIES 清单跑兑现轮动（数值字段留空由数据层填，**绝不编数字**）；没有则四元组表即交付，附 tushare/akshare 数据自助指引。若素材块②已判定「本期不适合」（映射弱/证据链薄），如实告知并给自研延伸方向，不硬凑
 
 ### Step 4：信封落盘
 
 digest 完成后由 `python3 scripts/verify_digest.py <本期目录> --write-envelope` 回写 `out/envelopes/pod-digest.json`——status 由机检结果决定（全绿才 green），headline/deliverable/episode_dir 由脚本从实际产物解析，self_check 为机检摘要。**不手写信封**，手写会被下次机检覆写。
+
+复用旧摘要时核对本期机检结果；全局信封可能来自其他单集。图片、配音和视频单独保存验证记录，不能把摘要机检通过当作媒体内容、听感或画面已通过。
 
 ## When NOT to Use（不适用场景）
 
@@ -116,10 +133,14 @@ digest 完成前逐项过，全绿才算完成：
 | `scripts/get_transcript.py` | 主入口：选集+下载+转写一条龙（幂等） |
 | `scripts/make_report.py` | 内置下游「出报告」：digest.md → 自包含 HTML 简报（零依赖） |
 | `scripts/make_cards.py` | 「出卡片」产物①：素材块① → HTML 知识卡片册（G1/G2/G3 风格，零依赖） |
+| `scripts/make_video.py` | 旁白 JSON + 图卡 → 中文配音、同步字幕、竖屏 MP4 与技术检查 |
+| `requirements-video.txt` | 配音视频的可选 Python 依赖 |
 | `scripts/itunes_search.sh` / `parse_feed.py` / `transcribe.sh` / `transcribe_groq.py` | 分步工具（acquisition.md 有详解） |
 | `references/acquisition.md` | 获取路由 + 8 条实测坑 + Hard Stop 纪律 |
 | `references/digest-format.md` | digest 模板逐节规范 + 证据强度标签 + 素材块 schema |
 | `references/downstream.md` | Ted-imgstyle / chain-rotation 衔接 + 数据源选项 |
+| `references/codex-media.md` | 内置生图、来源、图片验收与视频能力边界 |
+| `references/narrated-video.md` | 配音视频输入、命令、复用和视听验收 |
 | `references/local-setup.md` | 本地私设（发布公域时整体替换为通用安装指引） |
 | `config/shows.yaml` | 订阅清单（watchlist） |
 | `out/episodes/<show>/<date>-<slug>/` | transcript.txt / digest.md / meta.json |

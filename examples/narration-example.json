@@ -1,0 +1,20 @@
+{
+  "label": "硅谷101 E250",
+  "source_url": "https://sv101.fireside.fm/263",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "rate": "+3%",
+  "scenes": [
+    {
+      "id": 1,
+      "image": "cards/card-02.png",
+      "text": "个性化肿瘤疫苗先筛选新抗原，再编码成 mRNA，教免疫系统识别肿瘤。",
+      "source": {"timestamp": "14:09", "precision": "章节起点", "claim_type": "节目机制讲解的编辑转述"}
+    },
+    {
+      "id": 2,
+      "image": "cards/card-06.png",
+      "text": "AI 能预测抗原、优化序列，但药物仍要制造、质控和验证。",
+      "source": {"timestamp": "54:01", "precision": "章节起点", "claim_type": "嘉宾观点的编辑转述"}
+    }
+  ]
+}

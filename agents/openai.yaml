@@ -1,0 +1,4 @@
+interface:
+  display_name: "播客炼金炉"
+  short_description: "把播客整理为可追溯的中文摘要、知识图卡或带配音字幕的短视频"
+  default_prompt: "用 $pod-digest 处理这期播客，按内容制作知识图卡，并生成一分钟左右的中文配音字幕视频。"
